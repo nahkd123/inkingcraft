@@ -1,0 +1,30 @@
+{
+	"schemaVersion": 1,
+	"id": "inkingcraft",
+	"version": "${version}",
+	"name": "InkingCraft",
+	"description": "Use graphics tablet to play Minecraft!",
+	"authors": ["nahkd123"],
+	"contact": {
+		"homepage": "https://github.com/nahkd123/inkingcraft",
+		"sources": "https://github.com/nahkd123/inkingcraft.git"
+	},
+	"license": "MIT",
+	"icon": "assets/inkingcraft/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": ["io.github.nahkd123.inkingcraft.InkingCraft"],
+		"client": ["io.github.nahkd123.inkingcraft.client.InkingCraftClient"],
+		"modmenu": ["io.github.nahkd123.inkingcraft.client.integration.InkingCraftModMenu"]
+	},
+	"mixins": [
+		"inkingcraft.mixins.json",
+		{"config": "inkingcraft.client.mixins.json", "environment": "client"}
+	],
+	"depends": {
+		"fabricloader": ">=0.15.7",
+		"minecraft": "~1.20.4",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

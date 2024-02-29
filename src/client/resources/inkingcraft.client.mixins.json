@@ -1,0 +1,12 @@
+{
+	"required": true,
+	"package": "io.github.nahkd123.inkingcraft.client.mixin",
+	"compatibilityLevel": "JAVA_17",
+	"client": [
+		"GameRendererMixin",
+		"ScreenMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
