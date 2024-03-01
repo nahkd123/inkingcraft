@@ -186,17 +186,18 @@ public class InkingCraftClient implements ClientModInitializer {
 	}
 
 	public static void saveGlobalConfig() {
-		Path path = InkingCraft.getConfigFolder().resolve("global.json");
-		DataResult<JsonElement> result = InkingConfiguration.CODEC.encodeStart(JsonOps.INSTANCE, globalConfig);
-		Optional<JsonElement> opt = result.resultOrPartial(msg -> LOGGER.warn("{}: {}", path, msg));
-		if (opt.isEmpty()) return;
-
-		String jsonText = new GsonBuilder()
-			.disableHtmlEscaping()
-			.setPrettyPrinting()
-			.create().toJson(opt.get());
-
 		try {
+			Path path = InkingCraft.getConfigFolder().resolve("global.json");
+			if (!Files.exists(path.resolve(".."))) Files.createDirectories(path.resolve(".."));
+			DataResult<JsonElement> result = InkingConfiguration.CODEC.encodeStart(JsonOps.INSTANCE, globalConfig);
+			Optional<JsonElement> opt = result.resultOrPartial(msg -> LOGGER.warn("{}: {}", path, msg));
+			if (opt.isEmpty()) return;
+
+			String jsonText = new GsonBuilder()
+				.disableHtmlEscaping()
+				.setPrettyPrinting()
+				.create().toJson(opt.get());
+
 			Files.writeString(path, jsonText, StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			e.printStackTrace();
