@@ -9,7 +9,6 @@ import java.util.function.Supplier;
 
 import io.github.nahkd123.inking.api.tablet.Packet;
 import io.github.nahkd123.inking.api.tablet.Tablet;
-import io.github.nahkd123.inking.api.tablet.TabletSpec;
 import io.github.nahkd123.inking.api.util.Vector2;
 import io.github.nahkd123.inkingcraft.client.config.AreaMapping;
 import io.github.nahkd123.inkingcraft.client.gui.widget.TabletElement;
@@ -27,7 +26,8 @@ import net.minecraft.text.Text;
 public class AreaMappingWidget extends ClickableWidget implements TabletElement {
 	private static final DecimalFormat FORMATTER = new DecimalFormat("#,##0.##");
 	private Supplier<AreaMapping> mapping;
-	private Supplier<TabletSpec> spec;
+	private Supplier<Vector2> physicalSize;
+	private Supplier<Vector2> inputSize;
 	private Supplier<Vector2> screenSize;
 	private Runnable onChanges;
 
@@ -58,10 +58,11 @@ public class AreaMappingWidget extends ClickableWidget implements TabletElement 
 		Rectangle resize(Rectangle rect, double dx, double dy);
 	}
 
-	public AreaMappingWidget(int x, int y, int width, int height, Supplier<AreaMapping> mapping, Supplier<TabletSpec> spec, Supplier<Vector2> screenSize, Runnable onChanges) {
+	public AreaMappingWidget(int x, int y, int width, int height, Supplier<AreaMapping> mapping, Supplier<Vector2> physicalSize, Supplier<Vector2> inputSize, Supplier<Vector2> screenSize, Runnable onChanges) {
 		super(x, y, width, height, Text.literal("Area Mapping"));
 		this.mapping = mapping;
-		this.spec = spec;
+		this.physicalSize = physicalSize;
+		this.inputSize = inputSize;
 		this.screenSize = screenSize;
 		this.onChanges = onChanges;
 	}
@@ -83,9 +84,8 @@ public class AreaMappingWidget extends ClickableWidget implements TabletElement 
 		}
 
 		context.enableScissor(getX(), getY(), getX() + width, getY() + height);
-		TabletSpec spec = this.spec.get();
-		Vector2 physical = spec.getPhysicalSize();
-		Vector2 fullInput = spec.getInputSize();
+		Vector2 physical = physicalSize.get();
+		Vector2 fullInput = inputSize.get();
 
 		double x = getX() + 5;
 		double y = getY() + 5;
@@ -103,8 +103,13 @@ public class AreaMappingWidget extends ClickableWidget implements TabletElement 
 		context.drawBorder(0, 0, (int) tabletDrawSize[0], (int) tabletDrawSize[1], 0xFF7F7F7F);
 		context.drawText(
 			textRenderer,
-			"Full: " + FORMATTER.format(physical.x()) + "mm * " + FORMATTER.format(physical.y()) + "mm",
+			"Physical: " + FORMATTER.format(physical.x()) + "mm * " + FORMATTER.format(physical.y()) + "mm",
 			3, 3,
+			0xAFAFAF, false);
+		context.drawText(
+			textRenderer,
+			"Input: " + FORMATTER.format(fullInput.x()) + " * " + FORMATTER.format(fullInput.y()),
+			3, 3 + textRenderer.fontHeight,
 			0xAFAFAF, false);
 
 		// Draw current pointer
@@ -140,8 +145,8 @@ public class AreaMappingWidget extends ClickableWidget implements TabletElement 
 		context.drawText(
 			textRenderer,
 			"Active Area: " +
-				FORMATTER.format(tabletArea.width() / spec.getInputSize().x() * physical.x()) + "mm * " +
-				FORMATTER.format(tabletArea.height() / spec.getInputSize().y() * physical.y()) + "mm",
+				FORMATTER.format(tabletArea.width() / fullInput.x() * physical.x()) + "mm * " +
+				FORMATTER.format(tabletArea.height() / fullInput.y() * physical.y()) + "mm",
 			3, (int) mappedH - 1 - textRenderer.fontHeight,
 			0xFFFFFF, false);
 
@@ -178,8 +183,7 @@ public class AreaMappingWidget extends ClickableWidget implements TabletElement 
 	@Override
 	public void onClick(double mouseX, double mouseY) {
 		if (mapping.get() == null) return;
-		TabletSpec spec = this.spec.get();
-		Vector2 fullInput = spec.getInputSize();
+		Vector2 fullInput = inputSize.get();
 		double widgetRatio = width / (double) height;
 		double tabletRatio = fullInput.x() / fullInput.y();
 		double unitScale;
@@ -232,10 +236,10 @@ public class AreaMappingWidget extends ClickableWidget implements TabletElement 
 	public void onRelease(double mouseX, double mouseY) {
 		if (mapping.get() == null) return;
 		if (widgetRelease != null) widgetRelease.run();
-		onChanges.run();
 
 		if (currentMappingArea != null) {
 			mapping.get().setTabletArea(currentMappingArea);
+			onChanges.run();
 			currentMappingArea = null;
 		}
 

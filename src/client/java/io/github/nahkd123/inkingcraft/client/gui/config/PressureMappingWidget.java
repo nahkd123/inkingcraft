@@ -6,7 +6,6 @@ import org.joml.Matrix4f;
 
 import io.github.nahkd123.inking.api.tablet.Packet;
 import io.github.nahkd123.inking.api.tablet.Tablet;
-import io.github.nahkd123.inking.api.tablet.TabletSpec;
 import io.github.nahkd123.inkingcraft.client.config.PressureMapping;
 import io.github.nahkd123.inkingcraft.client.config.PressureMappingPoint;
 import io.github.nahkd123.inkingcraft.client.gui.widget.TabletElement;
@@ -21,7 +20,7 @@ import net.minecraft.text.Text;
 
 public class PressureMappingWidget extends ClickableWidget implements TabletElement {
 	private Supplier<PressureMapping> mapping;
-	private Supplier<TabletSpec> spec;
+	private Supplier<Integer> maxPressure;
 	private Runnable onChanges;
 	private PressureMappingPoint dragging = null;
 	private PressureMappingPoint selected = null;
@@ -30,10 +29,10 @@ public class PressureMappingWidget extends ClickableWidget implements TabletElem
 	private int sourcePressure;
 	private double mappedPressure;
 
-	public PressureMappingWidget(int x, int y, int width, int height, Supplier<PressureMapping> mapping, Supplier<TabletSpec> spec, Runnable onChanges) {
+	public PressureMappingWidget(int x, int y, int width, int height, Supplier<PressureMapping> mapping, Supplier<Integer> maxPressure, Runnable onChanges) {
 		super(x, y, width, height, Text.literal("Pressure Mapping"));
 		this.mapping = mapping;
-		this.spec = spec;
+		this.maxPressure = maxPressure;
 		this.onChanges = onChanges;
 	}
 
@@ -59,8 +58,15 @@ public class PressureMappingWidget extends ClickableWidget implements TabletElem
 
 		double width = this.width - 10;
 		double height = this.height - 10;
-		int maxPressure = spec.get().getMaxPressure();
+		int maxPressure = this.maxPressure.get();
 		context.drawText(textRenderer, "Max Pressure: " + maxPressure + " units", 0, 0, 0xAFAFAF, false);
+
+		// Draw axes
+		int fHeight = textRenderer.fontHeight;
+		context.drawText(textRenderer, "Input", 8, (int) height - fHeight - 8, 0xAFAFAF, false);
+		context.drawText(textRenderer, "Output", 8, (int) height - fHeight * 3 - 8, 0xAFAFAF, false);
+		context.fill(36, (int) height - 11, (int) width / 4, (int) height - 10, 0xFFAFAFAF);
+		context.fill(8, (int) height - fHeight * 3 - 12, 9, fHeight * 2, 0xFFAFAFAF);
 
 		PressureMappingPoint lastPoint = new PressureMappingPoint(0, 0);
 		for (PressureMappingPoint point : mapping.getPoints()) {
@@ -95,24 +101,10 @@ public class PressureMappingWidget extends ClickableWidget implements TabletElem
 				&& mouseY >= getY() + 5 + thisPointY - 3
 				&& mouseY <= getY() + 5 + thisPointY + 3;
 			boolean selected = this.selected == point;
-			String text = point.sourcePressure() + " -> " + point.targetPressure();
-			int textWidth = textRenderer.getWidth(text);
 
 			context.getMatrices().push();
 			context.getMatrices().translate(thisPointX, thisPointY, 0);
 			context.fill(-3, -3, 3, 3, hovering || selected ? 0xFFFFFFFF : 0x7FFFFFFF);
-
-			boolean centerText = thisPointX + textWidth / 2 < width && thisPointX - textWidth / 2 > 0;
-			boolean leftText = thisPointX + textWidth < width;
-
-			context.drawText(textRenderer, text,
-				centerText
-					? -textWidth / 2
-					: leftText ? 0
-					: -textWidth,
-				thisPointY < 12 ? 4 : -11,
-				hovering ? 0xFFFFFF : 0xAFAFAF, false);
-
 			context.getMatrices().pop();
 
 			lastPoint = point;
@@ -143,7 +135,7 @@ public class PressureMappingWidget extends ClickableWidget implements TabletElem
 		if (mapping == null) return;
 		double width = this.width - 10;
 		double height = this.height - 10;
-		int maxPressure = spec.get().getMaxPressure();
+		int maxPressure = this.maxPressure.get();
 
 		for (PressureMappingPoint point : mapping.getPoints()) {
 			float pointX = (float) (point.sourcePressure() * width / maxPressure);
@@ -155,6 +147,7 @@ public class PressureMappingWidget extends ClickableWidget implements TabletElem
 
 			if (hovering) {
 				dragging = selected = point;
+				onChanges.run();
 				return;
 			}
 		}
@@ -164,6 +157,7 @@ public class PressureMappingWidget extends ClickableWidget implements TabletElem
 		source = clamp(source, 0, maxPressure);
 		target = clamp(target, 0, maxPressure);
 		mapping.add(dragging = selected = new PressureMappingPoint(source, target));
+		onChanges.run();
 	}
 
 	@Override
@@ -172,13 +166,13 @@ public class PressureMappingWidget extends ClickableWidget implements TabletElem
 		PressureMapping mapping = this.mapping.get();
 		double width = this.width - 10;
 		double height = this.height - 10;
-		int sourceDelta = (int) (deltaX * spec.get().getMaxPressure() / width);
-		int targetDelta = (int) -(deltaY * spec.get().getMaxPressure() / height);
+		int sourceDelta = (int) (deltaX * maxPressure.get() / width);
+		int targetDelta = (int) -(deltaY * maxPressure.get() / height);
 
 		// @formatter:off
 		PressureMappingPoint newPoint = new PressureMappingPoint(
-			clamp(dragging.sourcePressure() + sourceDelta, 0, spec.get().getMaxPressure()),
-			clamp(dragging.targetPressure() + targetDelta, 0, spec.get().getMaxPressure()));
+			clamp(dragging.sourcePressure() + sourceDelta, 0, maxPressure.get()),
+			clamp(dragging.targetPressure() + targetDelta, 0, maxPressure.get()));
 		// @formatter:on
 
 		mapping.replace(dragging, newPoint);

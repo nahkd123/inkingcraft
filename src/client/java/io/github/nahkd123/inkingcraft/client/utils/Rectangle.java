@@ -11,9 +11,29 @@ public record Rectangle(double x, double y, double width, double height) {
 		this(origin.x(), origin.y(), size.x(), size.y());
 	}
 
+	public Rectangle(Vector2 size) {
+		this(ConstantVector2.ZERO, size);
+	}
+
 	public ConstantVector2 getOrigin() { return new ConstantVector2(x, y); }
 
 	public ConstantVector2 getSize() { return new ConstantVector2(width, height); }
+
+	public Rectangle withX(double x) {
+		return new Rectangle(x, y, width, height);
+	}
+
+	public Rectangle withY(double y) {
+		return new Rectangle(x, y, width, height);
+	}
+
+	public Rectangle withWidth(double width) {
+		return new Rectangle(x, y, width, height);
+	}
+
+	public Rectangle withHeight(double height) {
+		return new Rectangle(x, y, width, height);
+	}
 
 	public Rectangle withTranslation(double x, double y) {
 		return new Rectangle(this.x + x, this.y + y, width, height);
