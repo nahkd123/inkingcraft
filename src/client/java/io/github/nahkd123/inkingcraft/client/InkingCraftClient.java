@@ -27,8 +27,11 @@ import io.github.nahkd123.inking.otd.netnative.OtdNative;
 import io.github.nahkd123.inkingcraft.InkingCraft;
 import io.github.nahkd123.inkingcraft.client.config.ConfigurationsStore;
 import io.github.nahkd123.inkingcraft.client.config.InkingConfiguration;
+import io.github.nahkd123.inkingcraft.client.config.OfflineTabletSpec;
 import io.github.nahkd123.inkingcraft.client.config.TabletConfiguration;
 import io.github.nahkd123.inkingcraft.client.config.TabletSpecsStore;
+import io.github.nahkd123.inkingcraft.client.config.binding.trigger.InkingTriggers;
+import io.github.nahkd123.inkingcraft.client.config.binding.trigger.KeybindsTriggers;
 import io.github.nahkd123.inkingcraft.client.event.TabletPacketsCallback;
 import io.github.nahkd123.inkingcraft.client.event.TabletsCallback;
 import io.github.nahkd123.inkingcraft.client.gui.widget.TabletElement;
@@ -38,6 +41,7 @@ import io.github.nahkd123.inkingcraft.client.utils.XYConsumer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.MinecraftClient;
 
 /**
  * <p>
@@ -61,16 +65,21 @@ public class InkingCraftClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		// Init
+		InkingTriggers.EMPTY.register(InkingCraft.id("empty"));
 		initializeDriverEvents();
-		initializeTabletInput();
 		loadGlobalConfig();
 		specStore = new TabletSpecsStore(drivers, InkingCraft.getConfigFolder().resolve("specifications"));
-		configStore = new ConfigurationsStore(InkingCraft.getConfigFolder().resolve("configurations"));
 		inputManager = new InkingInputManager();
 
 		// We only load drivers when the client is started
 		// This allows other mods to register events listener
-		ClientLifecycleEvents.CLIENT_STARTED.register($ -> {
+		ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
+			KeybindsTriggers.registerAll();
+
+			// We have to load configuation late because some keybinds might not be
+			// available before client is started.
+			configStore = new ConfigurationsStore(InkingCraft.getConfigFolder().resolve("configurations"));
+
 			Path modDataDir = InkingCraft.getConfigFolder();
 			Linker linker = Linker.nativeLinker();
 			Arena arena = Arena.ofAuto();
@@ -81,6 +90,8 @@ public class InkingCraftClient implements ClientModInitializer {
 			LOGGER.info("Loading tablet drivers...");
 			drivers.addDriver(new OpenTabletDriver(OtdNative.findNative(modDataDir, linker, arena)));
 			LOGGER.info("Loaded {} tablet drivers!", drivers.getAllDrivers().size());
+
+			initializeTabletInput(client);
 		});
 
 		// Logging only
@@ -131,36 +142,36 @@ public class InkingCraftClient implements ClientModInitializer {
 		});
 	}
 
-	private void initializeTabletInput() {
-		ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
-			TabletPacketsCallback.UNFILTERED.register((tablet, packet) -> {
-				TabletConfiguration config = configStore.get(tablet);
-				if (!config.isEnabled()) return;
+	private void initializeTabletInput(MinecraftClient client) {
+		TabletPacketsCallback.UNFILTERED.register((tablet, packet) -> {
+			TabletConfiguration config = configStore.get(tablet);
+			if (!config.isEnabled()) return;
 
-				Vector2 screenSize = new ConstantVector2(client.getWindow().getWidth(), client.getWindow().getHeight());
-				double[] screenXY = new double[2];
-				config.getAreaMapping().map(packet.getPenPosition(), screenSize, XYConsumer.forArray(screenXY, 0));
-				double maxPressure = tablet.getSpec().getMaxPressure();
-				double pressure = config.getPressureMapping().map(packet.getRawPressure()) / maxPressure;
+			Vector2 screenSize = new ConstantVector2(client.getWindow().getWidth(), client.getWindow().getHeight());
+			double[] screenXY = new double[2];
+			config.getAreaMapping().map(packet.getPenPosition(), screenSize, XYConsumer.forArray(screenXY, 0));
+			double maxPressure = tablet.getSpec().getMaxPressure();
+			double pressure = config.getPressureMapping().map(packet.getRawPressure()) / maxPressure;
 
-				inputManager.get(tablet).setRawPacket(packet);
-				TabletPacketsCallback.FILTERED.invoker().onFilteredPacket(
-					tablet, packet,
-					screenXY[0], screenXY[1], pressure);
-			});
+			inputManager.get(tablet).setRawPacket(packet);
+			TabletPacketsCallback.FILTERED.invoker().onFilteredPacket(
+				tablet, packet,
+				screenXY[0], screenXY[1], pressure);
+		});
 
-			TabletPacketsCallback.FILTERED.register((tablet, packet, screenX, screenY, pressure) -> {
-				FilteredPacketData filtered = new FilteredPacketData(packet.getTimestamp(), screenX, screenY, pressure);
-				inputManager.get(tablet).setFilteredPacket(filtered);
+		TabletPacketsCallback.FILTERED.register((tablet, packet, screenX, screenY, pressure) -> {
+			TabletConfiguration config = configStore.get(tablet);
+			OfflineTabletSpec spec = specStore.getAllSpecifications().get(tablet.getTabletId());
+			FilteredPacketData filtered = new FilteredPacketData(packet, screenX, screenY, pressure);
+			inputManager.handleFilteredPacket(tablet, config, spec, filtered);
 
-				if (client.currentScreen != null) {
-					TabletElement elem = (TabletElement) client.currentScreen;
-					elem.tabletInputtedAsync(tablet, packet,
-						screenX / client.getWindow().getScaleFactor(),
-						screenY / client.getWindow().getScaleFactor(),
-						pressure);
-				}
-			});
+			if (client.currentScreen != null) {
+				TabletElement elem = (TabletElement) client.currentScreen;
+				elem.tabletInputtedAsync(tablet, packet,
+					screenX / client.getWindow().getScaleFactor(),
+					screenY / client.getWindow().getScaleFactor(),
+					pressure);
+			}
 		});
 	}
 

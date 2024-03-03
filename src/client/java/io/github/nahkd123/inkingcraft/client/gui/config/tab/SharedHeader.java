@@ -20,7 +20,7 @@ import net.minecraft.text.Text;
  */
 public class SharedHeader {
 	public TabletStatusWidget status;
-	public ButtonWidget previousButton, nextButton, notDetectedButton;
+	public ButtonWidget previousButton, nextButton, notDetectedButton, closeButton;
 
 	public SharedHeader(Screen parent, Supplier<TabletConfiguration> configuration, Runnable previousTablet, Runnable nextTablet) {
 		// @formatter:off
@@ -42,6 +42,7 @@ public class SharedHeader {
 				+ "Visit OpenTabletDriver website to find out why your tablet is not supported.")))
 			.width(100)
 			.build();
+		closeButton = ButtonWidget.builder(Text.literal("Done"), button -> parent.close()).width(50).build();
 		// @formatter:on
 	}
 
@@ -50,15 +51,18 @@ public class SharedHeader {
 		iterator.accept(previousButton);
 		iterator.accept(nextButton);
 		iterator.accept(notDetectedButton);
+		iterator.accept(closeButton);
 	}
 
 	public void refreshGrid(ScreenRect tabArea) {
-		boolean thinMode = tabArea.width() < 600 || tabArea.height() < 400;
+		boolean thinMode = tabArea.width() < 600;
 		int pad = thinMode ? 4 : 10;
+		int hpad = pad / 2;
 
 		previousButton.setPosition(tabArea.getLeft() + pad, tabArea.getTop() + pad);
-		nextButton.setPosition(previousButton.getRight() + 5, previousButton.getY());
+		nextButton.setPosition(previousButton.getRight() + hpad, previousButton.getY());
 		status.setPosition(nextButton.getRight() + 5, nextButton.getY());
-		notDetectedButton.setPosition(tabArea.getRight() - pad - 100, nextButton.getY());
+		closeButton.setPosition(tabArea.getRight() - pad - closeButton.getWidth(), nextButton.getY());
+		notDetectedButton.setPosition(closeButton.getX() - notDetectedButton.getWidth() - hpad, closeButton.getY());
 	}
 }

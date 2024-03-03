@@ -72,7 +72,7 @@ public class AreaMappingWidget extends ClickableWidget implements TabletElement 
 	protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
 		AreaMapping mapping = this.mapping.get();
 		TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
-		context.fill(getX(), getY(), getX() + width, getY() + height, 0xFF000000);
+		context.fill(getX(), getY(), getX() + width, getY() + height, 0x7F000000);
 		context.drawBorder(getX(), getY(), width, height, 0xFF2F2F2F);
 
 		if (mapping == null) {

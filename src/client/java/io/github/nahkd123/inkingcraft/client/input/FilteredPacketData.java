@@ -1,4 +1,6 @@
 package io.github.nahkd123.inkingcraft.client.input;
 
-public record FilteredPacketData(long timestamp, double screenX, double screenY, double pressure) {
+import io.github.nahkd123.inking.api.tablet.Packet;
+
+public record FilteredPacketData(Packet raw, double screenX, double screenY, double pressure) {
 }

@@ -17,7 +17,6 @@ import io.github.nahkd123.inkingcraft.client.utils.Rectangle;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.ScreenRect;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.tab.Tab;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -36,7 +35,6 @@ public class TabletAndPenTab implements Tab {
 	// Widgets and UI
 	private TextRenderer textRenderer;
 	private boolean ignoreTextFields = false, inputtingMode = false, thinMode = false;
-	public SharedHeader header;
 
 	public AreaMappingWidget area;
 	public ButtonWidget letterboxingButton, resetAreaButton;
@@ -52,14 +50,12 @@ public class TabletAndPenTab implements Tab {
 	private Vector2 screenSize = new ConstantVector2(1, 1);
 
 	@SuppressWarnings("resource")
-	public TabletAndPenTab(Screen parent, Supplier<TabletConfiguration> configuration, Supplier<TabletSpec> spec, Runnable onChanges, Runnable previousTablet, Runnable nextTablet) {
+	public TabletAndPenTab(Supplier<TabletConfiguration> configuration, Supplier<TabletSpec> spec, Runnable onChanges, Runnable previousTablet, Runnable nextTablet) {
 		this.textRenderer = MinecraftClient.getInstance().textRenderer;
 		this.configuration = configuration;
 		this.spec = spec;
 
 		// @formatter:off
-		header = new SharedHeader(parent, configuration, previousTablet, nextTablet);
-
 		area = new AreaMappingWidget(0, 0, 0, 0,
 			() -> configuration.get() != null ? configuration.get().getAreaMapping() : null,
 			() -> spec.get().getPhysicalSize(),
@@ -101,6 +97,10 @@ public class TabletAndPenTab implements Tab {
 		setNumericalInputCallbackFor(areaY, configuration.get().getAreaMapping()::getTabletArea, Rectangle::withY, configuration.get().getAreaMapping()::setTabletArea);
 		setNumericalInputCallbackFor(areaWidth, configuration.get().getAreaMapping()::getTabletArea, Rectangle::withWidth, configuration.get().getAreaMapping()::setTabletArea);
 		setNumericalInputCallbackFor(areaHeight, configuration.get().getAreaMapping()::getTabletArea, Rectangle::withHeight, configuration.get().getAreaMapping()::setTabletArea);
+		areaX.setTooltip(Tooltip.of(Text.literal("X position of area to use (based on input size).")));
+		areaY.setTooltip(Tooltip.of(Text.literal("Y position of area to use (based on input size).")));
+		areaWidth.setTooltip(Tooltip.of(Text.literal("Width of area to use (based on input size).")));
+		areaHeight.setTooltip(Tooltip.of(Text.literal("Height of area to use (based on input size).")));
 
 		pressure = new PressureMappingWidget(0, 0, 0, 0,
 			() -> configuration.get() != null ? configuration.get().getPressureMapping() : null,
@@ -138,6 +138,8 @@ public class TabletAndPenTab implements Tab {
 				configuration.get().getPressureMapping().replace(pressure.getSelectedPoint(), p);
 				pressure.setSelectedPoint(p);
 			});
+		sourcePressure.setTooltip(Tooltip.of(Text.literal("Input pressure from pen.")));
+		targetPressure.setTooltip(Tooltip.of(Text.literal("Mapped output pressure for all mods to consume.")));
 		// @formatter:on
 	}
 
@@ -146,8 +148,6 @@ public class TabletAndPenTab implements Tab {
 
 	@Override
 	public void forEachChild(Consumer<ClickableWidget> consumer) {
-		header.forEachChild(consumer);
-
 		consumer.accept(area);
 		consumer.accept(letterboxingButton);
 		consumer.accept(resetAreaButton);
@@ -216,11 +216,9 @@ public class TabletAndPenTab implements Tab {
 		int pad = thinMode ? 4 : 10;
 		int hpad = pad / 2;
 
-		header.refreshGrid(tabArea);
-
 		// Area mapping
-		area.setPosition(tabArea.getLeft() + pad, tabArea.getTop() + pad + 20 + hpad);
-		area.setDimensions(tabArea.width() - pad * 2 - sidebarWidth, tabArea.height() / 5 * 3 - 20 - hpad);
+		area.setPosition(tabArea.getLeft() + pad, tabArea.getTop() + pad);
+		area.setDimensions(tabArea.width() - pad * 2 - sidebarWidth, tabArea.height() / 5 * 3 - hpad);
 		letterboxingButton.setPosition(area.getRight() + hpad, area.getY());
 		letterboxingButton.setDimensions(sidebarWidth - hpad, 20);
 		resetAreaButton.setPosition(area.getRight() + hpad, letterboxingButton.getBottom() + hpad);

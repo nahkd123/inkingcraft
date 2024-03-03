@@ -22,4 +22,10 @@ public class InkingCodecs {
 		while (s.length() < maxLen) s = ch + s;
 		return s;
 	}
+
+	public static <E extends Enum<E>> Codec<E> enumOf(Class<E> enumClass) {
+		return Codec.STRING.xmap(
+			s -> Enum.valueOf(enumClass, s),
+			e -> e.toString());
+	}
 }

@@ -9,7 +9,8 @@ import io.github.nahkd123.inkingcraft.client.config.ConfigurationsStore;
 import io.github.nahkd123.inkingcraft.client.config.TabletConfiguration;
 import io.github.nahkd123.inkingcraft.client.config.TabletSpecsStore;
 import io.github.nahkd123.inkingcraft.client.gui.config.tab.BindingTab;
-import io.github.nahkd123.inkingcraft.client.gui.config.tab.MiscTab;
+import io.github.nahkd123.inkingcraft.client.gui.config.tab.SharedHeader;
+import io.github.nahkd123.inkingcraft.client.gui.config.tab.SimpleTab;
 import io.github.nahkd123.inkingcraft.client.gui.config.tab.TabletAndPenTab;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.ScreenRect;
@@ -28,7 +29,8 @@ public class TabletsConfigurationScreen extends Screen {
 	private TabletSpec currentSpec;
 	private TabletConfiguration currentConfig;
 
-	// Tabs
+	// Tabs and Widgets
+	private SharedHeader header;
 	private TabManager tabManager = new TabManager(this::addDrawableChild, child -> remove(child));
 	private TabletAndPenTab tabletAndPen;
 
@@ -60,28 +62,31 @@ public class TabletsConfigurationScreen extends Screen {
 	@Override
 	protected void init() {
 		// @formatter:off
+		int headerHeight = width < 800 || height < 400? 22 : 25;
+		header = new SharedHeader(this, () -> currentConfig, this::previousTablet, this::nextTablet);
+		header.forEachChild(this::addDrawableChild);
+		header.refreshGrid(new ScreenRect(0, 24, width, headerHeight));
+
 		TabNavigationWidget tabNav = addDrawableChild(TabNavigationWidget.builder(tabManager, width)
 			.tabs(
-				tabletAndPen = new TabletAndPenTab(this,
+				tabletAndPen = new TabletAndPenTab(
 					() -> currentConfig,
 					() -> currentSpec,
 					() -> store.save(currentConfig),
 					this::previousTablet,
 					this::nextTablet),
-				new BindingTab(this,
-					() -> currentConfig,
-					this::previousTablet,
-					this::nextTablet),
-				new MiscTab(this,
-					() -> currentConfig,
-					this::previousTablet,
-					this::nextTablet))
+				new BindingTab(
+					() -> currentConfig != null? currentConfig.getBinding() : null,
+					() -> currentSpec,
+					() -> store.save(currentConfig)),
+				new SimpleTab(Text.literal("Miscellaneous")),
+				new SimpleTab(Text.literal("Diagnostic")))
 			.build());
 		// @formatter:on
 
 		tabNav.selectTab(0, false);
 		tabNav.init();
-		tabManager.setTabArea(new ScreenRect(0, 24, width, height - 24));
+		tabManager.setTabArea(new ScreenRect(0, 24 + headerHeight, width, height - 24 - headerHeight));
 		updateWidgets();
 	}
 

@@ -10,12 +10,9 @@ import org.spongepowered.asm.mixin.Shadow;
 
 import io.github.nahkd123.inking.api.tablet.Packet;
 import io.github.nahkd123.inking.api.tablet.Tablet;
-import io.github.nahkd123.inkingcraft.client.InkingCraftClient;
-import io.github.nahkd123.inkingcraft.client.config.TabletConfiguration;
 import io.github.nahkd123.inkingcraft.client.gui.widget.TabletElement;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.AbstractParentElement;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.screen.Screen;
 
@@ -40,15 +37,5 @@ public abstract class ScreenMixin implements TabletElement {
 		// Can't use TabletElement.super.tabletInputtedAsync() because of weird Mixin
 		// quirk.
 		MinecraftClient.getInstance().execute(() -> tabletInputted(tablet, raw, penX, penY, pressure));
-	}
-
-	@Override
-	public void tabletInputted(Tablet tablet, Packet raw, double penX, double penY, double pressure) {
-		AbstractParentElement self = (AbstractParentElement) (Object) this;
-		TabletConfiguration config = InkingCraftClient.getConfigStore().get(tablet);
-
-		if (config.isInteractUI()) {
-			// TODO interact the screen
-		}
 	}
 }
