@@ -4,12 +4,10 @@
 _Play Minecraft with your graphics tablet! (sort of)_
 
 ## Features
-- Graphics tablet inputs (pen absolute position, pen pressure, pen tilting, etc...)
+- Access to additional info from graphics tablet: Pen absolute position; pen pressure; tilting angles, etc...
+- Mouse emulation: Emulate mouse; control player's camera.
+- Buttons binding: Bind pen and tablet buttons to game's keybind or triggers from other mods.
 - _More to come!_
-
-## Planned features
-- [ ] Buttons binding
-- [ ] Translate tablet inputs to player's camera controls
 
 ## Installing InkingCraft (as of Feb 29th, 2024)
 1. Clone [Inking](https://github.com/nahkd123/inking) repository and this repository.
@@ -23,7 +21,7 @@ There are 5 different ways to handle inputs with InkingCraft:
 1. Handle filtered packets through `TabletPacketsCallback` (still call callbacks in input thread).
 1. Handle packets in your GUI widget (by implementing `TabletElement` interface). Contains both sync and async methods.
 1. Read the current pointer position in `InkingInputManager` (contains pointer's last received packet).
-1. Register your callback directly to `Tablet` from `Inking`, which also call your callback in input thread.
+1. Register your callback directly to `Tablet` from `Inking`, which also call your callback from input thread.
 
 ## License
 MIT license.
